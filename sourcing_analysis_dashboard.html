@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CloudWalk — Sourcing Analysis</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Georgia', serif; background: #fff; color: #111; }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 80px;
+    border-bottom: 3px solid #111;
+  }
+  .cover-top .label { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #999; margin-bottom: 40px; display: block; }
+  .cover-top h1 { font-size: 52px; font-weight: normal; line-height: 1.1; max-width: 700px; }
+  .cover-top h1 em { font-style: italic; }
+  .cover-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+  .cover-meta { font-size: 13px; color: #555; line-height: 2; }
+  .cover-stats { display: flex; gap: 48px; }
+  .cover-stat .num { font-size: 36px; font-weight: bold; display: block; }
+  .cover-stat .lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #999; }
+
+  /* SECTIONS */
+  .section { padding: 80px; border-bottom: 1px solid #ddd; }
+  .section-eyebrow { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+  .section h2 { font-size: 28px; font-weight: normal; margin-bottom: 48px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+
+  /* KPI ROW */
+  .kpi-row { display: flex; border: 1px solid #111; margin-bottom: 40px; }
+  .kpi { flex: 1; padding: 28px 20px; border-right: 1px solid #111; text-align: center; }
+  .kpi:last-child { border-right: none; }
+  .kpi .num { font-size: 32px; font-weight: bold; display: block; }
+  .kpi .pct { font-size: 12px; color: #555; display: block; margin-top: 2px; }
+  .kpi .lbl { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #999; margin-top: 10px; display: block; }
+
+  /* FUNNEL */
+  .funnel { display: flex; flex-direction: column; gap: 6px; max-width: 680px; }
+  .funnel-row { display: flex; align-items: center; gap: 16px; }
+  .funnel-label { width: 150px; font-size: 12px; text-align: right; color: #555; flex-shrink: 0; }
+  .funnel-bar-wrap { flex: 1; background: #f0f0f0; height: 34px; position: relative; }
+  .funnel-bar { height: 100%; background: #111; display: flex; align-items: center; }
+  .funnel-val { font-size: 11px; color: #fff; padding-left: 10px; white-space: nowrap; }
+  .funnel-pct { width: 52px; font-size: 12px; color: #999; text-align: right; flex-shrink: 0; }
+
+  /* NOTE BOX */
+  .note-box { border-left: 3px solid #111; padding: 16px 20px; background: #f9f9f9; margin-top: 32px; font-size: 13px; line-height: 1.7; color: #444; max-width: 680px; }
+  .note-box strong { color: #111; }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 48px; }
+
+  /* CHART */
+  .chart h3 { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #999; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-name { width: 140px; font-size: 12px; color: #333; flex-shrink: 0; text-align: right; }
+  .bar-wrap { flex: 1; background: #f0f0f0; height: 26px; position: relative; }
+  .bar-fill { height: 100%; background: #111; }
+  .bar-fill.mid { background: #888; }
+  .bar-fill.low { background: #ccc; }
+  .bar-num-in { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #fff; }
+  .bar-num-out { position: absolute; right: -42px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #666; }
+  .chart-note { font-size: 11px; color: #999; margin-top: 14px; line-height: 1.6; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { padding: 10px 14px; text-align: left; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #999; border-bottom: 2px solid #111; font-weight: normal; }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid #eee; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .data-table td.strong { font-weight: bold; }
+  .data-table tr.highlight td { background: #f5f5f5; }
+
+  /* HEATMAP */
+  .heatmap { border-collapse: collapse; font-size: 12px; }
+  .heatmap th { padding: 10px 18px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #999; border-bottom: 1px solid #ddd; font-weight: normal; text-align: center; }
+  .heatmap td { padding: 12px 20px; text-align: center; border: 1px solid #eee; }
+  .heatmap td.name { text-align: right; border: none; border-right: 1px solid #ddd; color: #333; padding-right: 16px; }
+  .h0 { background: #fff; color: #ccc; }
+  .h1 { background: #e8e8e8; color: #555; }
+  .h2 { background: #bbb; color: #111; }
+  .h3 { background: #777; color: #fff; }
+  .h4 { background: #111; color: #fff; font-weight: bold; }
+
+  /* SCORE COMPARE */
+  .score-block { margin-bottom: 20px; }
+  .score-block .score-label { font-size: 12px; color: #555; margin-bottom: 6px; }
+  .score-bars { display: flex; flex-direction: column; gap: 3px; }
+  .score-bar-row { display: flex; align-items: center; gap: 10px; }
+  .score-tag { width: 70px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #999; flex-shrink: 0; text-align: right; }
+  .score-bar-wrap { width: 220px; background: #f0f0f0; height: 22px; position: relative; }
+  .score-bar-fill { height: 100%; }
+  .score-bar-fill.hired { background: #111; }
+  .score-bar-fill.not { background: #ccc; }
+  .score-val { font-size: 12px; color: #555; }
+
+  /* INSIGHT CARDS */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .insight-card { border: 1px solid #ddd; padding: 28px; }
+  .insight-card .ico { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #999; margin-bottom: 12px; }
+  .insight-card h4 { font-size: 14px; margin-bottom: 10px; font-weight: normal; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+  .insight-card p { font-size: 13px; line-height: 1.7; color: #444; }
+  .insight-card strong { color: #111; }
+
+  /* RECS */
+  .recs { border: 1px solid #111; }
+  .rec { display: flex; border-bottom: 1px solid #ddd; }
+  .rec:last-child { border-bottom: none; }
+  .rec-num { width: 60px; padding: 24px; font-size: 24px; font-weight: bold; color: #ddd; border-right: 1px solid #ddd; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 26px; }
+  .rec-body { padding: 24px 28px; }
+  .rec-body h4 { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .rec-body p { font-size: 13px; line-height: 1.7; color: #444; }
+
+  /* AI */
+  .ai-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #111; margin-bottom: 32px; }
+  .ai-step { padding: 32px; border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+  .ai-step:nth-child(2) { border-right: none; }
+  .ai-step:nth-child(3) { border-bottom: none; }
+  .ai-step:nth-child(4) { border-right: none; border-bottom: none; }
+  .ai-step .step-n { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #999; margin-bottom: 10px; }
+  .ai-step h4 { font-size: 14px; font-weight: normal; margin-bottom: 10px; }
+  .ai-step p { font-size: 12px; line-height: 1.7; color: #555; }
+
+  /* FOOTER */
+  .footer { padding: 40px 80px; display: flex; justify-content: space-between; border-top: 1px solid #ddd; }
+  .footer span { font-size: 11px; color: #999; letter-spacing: 2px; text-transform: uppercase; }
+
+  .divider { border: none; border-top: 1px solid #eee; margin: 40px 0; }
+  .mt-32 { margin-top: 32px; }
+  .mt-48 { margin-top: 48px; }
+  .tag { display: inline-block; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; background: #111; color: #fff; padding: 3px 8px; margin-bottom: 16px; }
+  .tag.light { background: #eee; color: #666; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-top">
+    <span class="label">CloudWalk — Technical Challenge</span>
+    <h1>Sourcing Analysis:<br><em>Patterns, Conversion<br>& Recruiter Intelligence</em></h1>
+  </div>
+  <div class="cover-bottom">
+    <div class="cover-meta">
+      601 candidates &nbsp;·&nbsp; 6 recruiters &nbsp;·&nbsp; 8 source channels &nbsp;·&nbsp; 4 seniority levels &nbsp;·&nbsp; 4 roles<br>
+      AI-assisted analysis using Claude (Anthropic)
+    </div>
+    <div class="cover-stats">
+      <div class="cover-stat"><span class="num">8.2%</span><span class="lbl">Overall Hire Rate</span></div>
+      <div class="cover-stat"><span class="num">49</span><span class="lbl">Total Hired</span></div>
+      <div class="cover-stat"><span class="num">10</span><span class="lbl">Key Insights</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 1: APPROACH -->
+<div class="section">
+  <div class="section-eyebrow">Section 01</div>
+  <h2>Approach</h2>
+  <p style="font-size:14px; line-height:1.8; color:#444; max-width:720px;">
+    This analysis was built on a fictional sourcing dataset of 601 candidates across 6 recruiters, 8 source channels, and 4 seniority levels. The goal was to move beyond surface-level funnel metrics and surface actionable patterns that help recruiters make better decisions — faster.
+  </p>
+  <div style="margin-top:32px; display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:720px;">
+    <div style="border:1px solid #eee; padding:20px; font-size:13px; color:#555; line-height:1.7;">Which sourcing strategies convert best?</div>
+    <div style="border:1px solid #eee; padding:20px; font-size:13px; color:#555; line-height:1.7;">What signals indicate a higher chance of advancing?</div>
+    <div style="border:1px solid #eee; padding:20px; font-size:13px; color:#555; line-height:1.7;">When is it worth persisting with a candidate?</div>
+    <div style="border:1px solid #eee; padding:20px; font-size:13px; color:#555; line-height:1.7;">When is there a low probability of conversion?</div>
+    <div style="border:1px solid #eee; padding:20px; font-size:13px; color:#555; line-height:1.7; grid-column:span 2;">Are there relevant patterns among channels, recruiters, or profiles?</div>
+  </div>
+</div>
+
+<!-- SECTION 2: FUNNEL -->
+<div class="section">
+  <div class="section-eyebrow">Section 02</div>
+  <h2>Conversion Funnel</h2>
+
+  <div class="kpi-row">
+    <div class="kpi"><span class="num">601</span><span class="pct">100%</span><span class="lbl">Sourced</span></div>
+    <div class="kpi"><span class="num">408</span><span class="pct">67.9%</span><span class="lbl">Responded</span></div>
+    <div class="kpi"><span class="num">308</span><span class="pct">51.2%</span><span class="lbl">Screening Pass</span></div>
+    <div class="kpi"><span class="num">234</span><span class="pct">38.9%</span><span class="lbl">Interview 1</span></div>
+    <div class="kpi"><span class="num">201</span><span class="pct">33.4%</span><span class="lbl">Test Taken</span></div>
+    <div class="kpi"><span class="num">62</span><span class="pct">10.3%</span><span class="lbl">Offer Sent</span></div>
+    <div class="kpi"><span class="num">49</span><span class="pct">8.2%</span><span class="lbl">Hired</span></div>
+  </div>
+
+  <div class="funnel">
+    <div class="funnel-row"><div class="funnel-label">Sourced</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%"><span class="funnel-val">601</span></div></div><div class="funnel-pct">100%</div></div>
+    <div class="funnel-row"><div class="funnel-label">Responded</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:67.9%"><span class="funnel-val">408</span></div></div><div class="funnel-pct">67.9%</div></div>
+    <div class="funnel-row"><div class="funnel-label">Screening Pass</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:51.2%"><span class="funnel-val">308</span></div></div><div class="funnel-pct">51.2%</div></div>
+    <div class="funnel-row"><div class="funnel-label">Interview 1 Pass</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:38.9%"><span class="funnel-val">234</span></div></div><div class="funnel-pct">38.9%</div></div>
+    <div class="funnel-row"><div class="funnel-label">Test Taken</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:33.4%"><span class="funnel-val">201</span></div></div><div class="funnel-pct">33.4%</div></div>
+    <div class="funnel-row"><div class="funnel-label">Offer Sent</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:10.3%"><span class="funnel-val">62</span></div></div><div class="funnel-pct">10.3%</div></div>
+    <div class="funnel-row"><div class="funnel-label">Hired</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:8.2%"><span class="funnel-val">49</span></div></div><div class="funnel-pct">8.2%</div></div>
+  </div>
+
+  <div class="note-box mt-32">
+    <strong>Data quality finding:</strong> Post-test evaluation includes behavior and manager assessments — however, the dataset does not capture pass/fail flags for these stages, only scores. Without structured gates, it's impossible to measure drop-off at each assessment layer.
+  </div>
+</div>
+
+<!-- SECTION 3: CHANNELS -->
+<div class="section">
+  <div class="section-eyebrow">Section 03</div>
+  <h2>Which Sourcing Strategies Convert Best?</h2>
+
+  <div class="two-col">
+    <div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Channel</th><th class="num">Candidates</th><th class="num">Hired</th><th class="num">Hire Rate</th><th class="num">Response Rate</th></tr>
+        </thead>
+        <tbody>
+          <tr class="highlight"><td class="strong">Github</td><td class="num">73</td><td class="num">8</td><td class="num strong">11.0%</td><td class="num">68.5%</td></tr>
+          <tr class="highlight"><td class="strong">Inbound</td><td class="num">69</td><td class="num">7</td><td class="num strong">10.1%</td><td class="num">79.7%</td></tr>
+          <tr><td>Hunting</td><td class="num">75</td><td class="num">7</td><td class="num">9.3%</td><td class="num">64.0%</td></tr>
+          <tr><td>Talent Pool</td><td class="num">68</td><td class="num">6</td><td class="num">8.8%</td><td class="num">75.0%</td></tr>
+          <tr><td>LinkedIn</td><td class="num">81</td><td class="num">7</td><td class="num">8.6%</td><td class="num">63.0%</td></tr>
+          <tr><td>Communities</td><td class="num">89</td><td class="num">7</td><td class="num">7.9%</td><td class="num">67.4%</td></tr>
+          <tr><td>Events</td><td class="num">82</td><td class="num">4</td><td class="num">4.9%</td><td class="num">67.1%</td></tr>
+          <tr><td style="color:#999;">Referrals</td><td class="num" style="color:#999;">64</td><td class="num" style="color:#999;">3</td><td class="num" style="color:#999;">4.7%</td><td class="num" style="color:#999;">59.4%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="chart">
+        <h3>Hire Rate by Channel</h3>
+        <div class="bar-chart">
+          <div class="bar-row"><div class="bar-name">Github</div><div class="bar-wrap"><div class="bar-fill" style="width:100%"><span class="bar-num-in">11.0%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Inbound</div><div class="bar-wrap"><div class="bar-fill" style="width:91.8%"><span class="bar-num-in">10.1%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Hunting</div><div class="bar-wrap"><div class="bar-fill" style="width:84.5%"><span class="bar-num-in">9.3%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Talent Pool</div><div class="bar-wrap"><div class="bar-fill" style="width:80%"><span class="bar-num-in">8.8%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">LinkedIn</div><div class="bar-wrap"><div class="bar-fill" style="width:78.2%"><span class="bar-num-in">8.6%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Communities</div><div class="bar-wrap"><div class="bar-fill" style="width:71.8%"><span class="bar-num-in">7.9%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Events</div><div class="bar-wrap"><div class="bar-fill mid" style="width:44.5%"><span class="bar-num-in">4.9%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Referrals</div><div class="bar-wrap"><div class="bar-fill low" style="width:42.7%"><span class="bar-num-in" style="color:#555;">4.7%</span></div></div></div>
+        </div>
+      </div>
+      <div class="note-box" style="margin-top:24px;">
+        <strong>Referrals underperform at two levels:</strong> recruiters may skip screening rigor, and referred candidates may approach the process with less urgency — assuming the internal recommendation carries more weight than it does.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 4: SIGNALS -->
+<div class="section">
+  <div class="section-eyebrow">Section 04</div>
+  <h2>What Signals Indicate a Higher Chance of Advancing?</h2>
+
+  <div class="two-col">
+    <div>
+      <div class="chart">
+        <h3>Score Threshold — Hired vs. Not Hired (0–100 scale)</h3>
+        <div class="score-block">
+          <div class="score-label">Technical Test</div>
+          <div class="score-bars">
+            <div class="score-bar-row"><div class="score-tag">Hired</div><div class="score-bar-wrap"><div class="score-bar-fill hired" style="width:82.4%"></div></div><span class="score-val">82.4</span></div>
+            <div class="score-bar-row"><div class="score-tag">Not Hired</div><div class="score-bar-wrap"><div class="score-bar-fill not" style="width:72.9%"></div></div><span class="score-val">72.9</span></div>
+          </div>
+        </div>
+        <div class="score-block">
+          <div class="score-label">Behavior</div>
+          <div class="score-bars">
+            <div class="score-bar-row"><div class="score-tag">Hired</div><div class="score-bar-wrap"><div class="score-bar-fill hired" style="width:80.1%"></div></div><span class="score-val">80.1</span></div>
+            <div class="score-bar-row"><div class="score-tag">Not Hired</div><div class="score-bar-wrap"><div class="score-bar-fill not" style="width:74%"></div></div><span class="score-val">74.0</span></div>
+          </div>
+        </div>
+        <div class="score-block">
+          <div class="score-label">Manager</div>
+          <div class="score-bars">
+            <div class="score-bar-row"><div class="score-tag">Hired</div><div class="score-bar-wrap"><div class="score-bar-fill hired" style="width:80.9%"></div></div><span class="score-val">80.9</span></div>
+            <div class="score-bar-row"><div class="score-tag">Not Hired</div><div class="score-bar-wrap"><div class="score-bar-fill not" style="width:73.1%"></div></div><span class="score-val">73.1</span></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#666; margin-top:16px; line-height:1.7;">Soft threshold around 75 across all three dimensions: candidates clearing this bar show an <strong>82.6% offer rate</strong>. Not a hard gate — a compensation pattern exists where lower scores in one dimension are offset by higher scores in others, consistent with a holistic debrief model.</p>
+    </div>
+    <div>
+      <div class="chart">
+        <h3>Recruiter Notes — Hire Rate by Flag</h3>
+        <div class="bar-chart">
+          <div class="bar-row"><div class="bar-name" style="width:180px;">High salary expectations</div><div class="bar-wrap"><div class="bar-fill" style="width:100%"><span class="bar-num-in">14.0%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name" style="width:180px;">Strong comms & fast response</div><div class="bar-wrap"><div class="bar-fill" style="width:82.1%"><span class="bar-num-in">11.5%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name" style="width:180px;">Positive manager feedback</div><div class="bar-wrap"><div class="bar-fill mid" style="width:41.4%"><span class="bar-num-in">5.8%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name" style="width:180px;">Growth potential</div><div class="bar-wrap"><div class="bar-fill low" style="width:25.7%"><span class="bar-num-in" style="color:#555;">3.6%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name" style="width:180px;">Strong role fit</div><div class="bar-wrap"><div class="bar-fill low" style="width:12.1%"></div><span style="font-size:11px; color:#999; margin-left:8px;">1.7%</span></div></div>
+        </div>
+        <p class="chart-note" style="margin-top:16px;">'Strong role fit' and 'growth potential' correlate with poor conversion — candidates who present well on paper but underperform at assessment. 'Positive manager feedback' at 5.8% signals recurring misalignment between interview enthusiasm and final decisions.</p>
+      </div>
+      <div class="note-box" style="margin-top:24px;">
+        <strong>Data quality flag:</strong> Candidate ID 601 presents scores outside the 0–100 range: technical 118, behavior 12, manager 104. Received an offer and was hired. Score validation rules should be enforced at the ATS level.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5: PERSIST -->
+<div class="section">
+  <div class="section-eyebrow">Section 05</div>
+  <h2>When Is It Worth Persisting With a Candidate?</h2>
+
+  <div class="two-col">
+    <div>
+      <p style="font-size:14px; line-height:1.8; color:#444; margin-bottom:32px;">Of the 185 candidates who passed Interview 1 but were not hired, <strong>46 exited for purely external reasons</strong> — timing mismatch, headcount closure, salary mismatch, or accepting another offer. These are not rejection signals. They are pipeline assets.</p>
+
+      <table class="data-table">
+        <thead><tr><th>Exit Reason</th><th class="num">Count</th></tr></thead>
+        <tbody>
+          <tr><td>Timing mismatch</td><td class="num">16</td></tr>
+          <tr><td>Failed technical test</td><td class="num">14</td></tr>
+          <tr><td>Headcount closed</td><td class="num">13</td></tr>
+          <tr><td>Low engagement</td><td class="num">13</td></tr>
+          <tr><td>No response</td><td class="num">11</td></tr>
+          <tr><td>Low technical fit</td><td class="num">10</td></tr>
+          <tr><td>Salary mismatch</td><td class="num">10</td></tr>
+          <tr><td>Accepted another offer</td><td class="num">7</td></tr>
+          <tr><td>Culture add mismatch</td><td class="num">7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="insight-card" style="margin-bottom:20px;">
+        <div class="ico">Priority Pipeline</div>
+        <h4>8 candidates cleared ≥75 across all 3 dimensions but received no offer</h4>
+        <p>Every single one was lost to <strong>timing or headcount — not fit</strong>. These profiles already passed the most selective gate in the funnel and should be the first call when a relevant role opens.</p>
+      </div>
+      <div class="insight-card" style="margin-bottom:20px;">
+        <div class="ico">Persist Signal</div>
+        <h4>Stage duration as engagement indicator</h4>
+        <p>Candidates who remained actively engaged across multiple process stages before exiting for external reasons demonstrated <strong>sustained interest</strong> — a behavioral indicator that their motivation was genuine, not passive.</p>
+      </div>
+      <div class="insight-card">
+        <div class="ico">Compensation</div>
+        <h4>'High salary expectations' appeared 6 times among external exits</h4>
+        <p>Consistent with the broader finding that these candidates have a <strong>14% hire rate</strong>. Compensation complexity alone should not disqualify a strong profile — but requires an honest early conversation about range alignment.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6: LOW PROBABILITY -->
+<div class="section">
+  <div class="section-eyebrow">Section 06</div>
+  <h2>When Is There a Low Probability of Conversion?</h2>
+
+  <div class="two-col">
+    <div>
+      <div class="chart">
+        <h3>No-Response Rate by Channel</h3>
+        <div class="bar-chart">
+          <div class="bar-row"><div class="bar-name">Referrals</div><div class="bar-wrap"><div class="bar-fill" style="width:100%"><span class="bar-num-in">42.2%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">LinkedIn</div><div class="bar-wrap"><div class="bar-fill" style="width:96.4%"><span class="bar-num-in">40.7%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Communities</div><div class="bar-wrap"><div class="bar-fill mid" style="width:87.9%"><span class="bar-num-in">37.1%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Hunting</div><div class="bar-wrap"><div class="bar-fill mid" style="width:85.3%"><span class="bar-num-in">36.0%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Github</div><div class="bar-wrap"><div class="bar-fill mid" style="width:84.3%"><span class="bar-num-in">35.6%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Events</div><div class="bar-wrap"><div class="bar-fill mid" style="width:77.9%"><span class="bar-num-in">32.9%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Talent Pool</div><div class="bar-wrap"><div class="bar-fill low" style="width:69.7%"><span class="bar-num-in" style="color:#555;">29.4%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Inbound</div><div class="bar-wrap"><div class="bar-fill low" style="width:58.3%"><span class="bar-num-in" style="color:#555;">24.6%</span></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="border:1px solid #111; padding:32px; margin-bottom:24px;">
+        <div style="font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#999; margin-bottom:16px;">High Drop-Off Combinations</div>
+        <div style="margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #eee;">
+          <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">Junior + Referral</div>
+          <div style="font-size:28px; font-weight:bold;">0%</div>
+          <div style="font-size:12px; color:#999;">hire rate · 0 of 7 candidates hired</div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:bold; margin-bottom:4px;">Technical Score Below 70</div>
+          <div style="font-size:28px; font-weight:bold;">0%</div>
+          <div style="font-size:12px; color:#999;">hire rate · 221 candidates · hard floor</div>
+        </div>
+      </div>
+      <div class="note-box">
+        <strong>No response accounts for 210 of 375 logged rejections</strong> — the biggest pipeline killer. This is a sourcing quality and outreach personalization problem, not a volume problem.<br><br>
+        <strong>Data quality note:</strong> 226 of 552 non-hired candidates have no rejection reason logged — 41% of exits are untracked. Mandatory rejection reason capture should be enforced in the ATS.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 7: PATTERNS -->
+<div class="section">
+  <div class="section-eyebrow">Section 07</div>
+  <h2>Patterns Among Channels, Recruiters & Profiles</h2>
+
+  <div class="two-col" style="margin-bottom:48px;">
+    <div>
+      <div class="chart" style="margin-bottom:32px;">
+        <h3>Overall Hire Rate by Recruiter</h3>
+        <div class="bar-chart">
+          <div class="bar-row"><div class="bar-name">Bruno</div><div class="bar-wrap"><div class="bar-fill" style="width:100%"><span class="bar-num-in">15.3%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Ana</div><div class="bar-wrap"><div class="bar-fill" style="width:86.9%"><span class="bar-num-in">13.3%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Carla</div><div class="bar-wrap"><div class="bar-fill mid" style="width:58.2%"><span class="bar-num-in">8.9%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Gustavo</div><div class="bar-wrap"><div class="bar-fill low" style="width:32.7%"><span class="bar-num-in" style="color:#555;">5.0%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Diego</div><div class="bar-wrap"><div class="bar-fill low" style="width:32%"><span class="bar-num-in" style="color:#555;">4.9%</span></div></div></div>
+          <div class="bar-row"><div class="bar-name">Fernanda</div><div class="bar-wrap"><div class="bar-fill low" style="width:25.5%"></div><span style="font-size:11px;color:#999;margin-left:8px;">3.9%</span></div></div>
+        </div>
+        <p class="chart-note"><strong>Volume ≠ performance:</strong> Gustavo sources the most (121) but ranks 5th in hire rate (5%). Ana sources the fewest (75) and ranks 2nd (13.3%).</p>
+      </div>
+    </div>
+    <div>
+      <div class="chart">
+        <h3>Recruiter × Seniority Hire Rate Heatmap</h3>
+        <table class="heatmap">
+          <tr><th></th><th>Junior</th><th>Pleno</th><th>Senior</th><th>Staff</th></tr>
+          <tr><td class="name">Ana</td><td class="h0">0%</td><td class="h2">12.1%</td><td class="h2">13.6%</td><td class="h4">37.5%</td></tr>
+          <tr><td class="name">Bruno</td><td class="h1">4.8%</td><td class="h3">16.1%</td><td class="h3">19.4%</td><td class="h3">20.0%</td></tr>
+          <tr><td class="name">Carla</td><td class="h0">0%</td><td class="h1">5.4%</td><td class="h2">17.6%</td><td class="h1">10.0%</td></tr>
+          <tr><td class="name">Diego</td><td class="h1">5.9%</td><td class="h1">7.5%</td><td class="h0">2.9%</td><td class="h0">0%</td></tr>
+          <tr><td class="name">Fernanda</td><td class="h1">6.7%</td><td class="h0">2.5%</td><td class="h1">5.3%</td><td class="h0">0%</td></tr>
+          <tr><td class="name">Gustavo</td><td class="h1">8.3%</td><td class="h0">2.1%</td><td class="h0">2.6%</td><td class="h3">18.2%</td></tr>
+        </table>
+        <p class="chart-note" style="margin-top:12px;">Darker = higher hire rate. Ana dominates Staff. Bruno is consistently strong across all levels. Diego and Fernanda collapse at senior/staff.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="chart" style="margin-bottom:32px;">
+    <h3>Role-Level Patterns</h3>
+  </div>
+  <div class="two-col">
+    <div>
+      <table class="data-table">
+        <thead><tr><th>Role</th><th class="num">Total</th><th class="num">Hired</th><th class="num">Hire Rate</th></tr></thead>
+        <tbody>
+          <tr class="highlight"><td class="strong">Analista de Recrutamento</td><td class="num">147</td><td class="num">17</td><td class="num strong">11.6%</td></tr>
+          <tr><td>People BP</td><td class="num">165</td><td class="num">14</td><td class="num">8.5%</td></tr>
+          <tr><td>Analista de Dados</td><td class="num">162</td><td class="num">11</td><td class="num">6.8%</td></tr>
+          <tr><td style="color:#999;">Talent Acquisition Specialist</td><td class="num" style="color:#999;">127</td><td class="num" style="color:#999;">7</td><td class="num" style="color:#999;">5.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="note-box">
+        <strong>Strongest role-channel combination in the dataset:</strong> Analista de Recrutamento sourced via Github converts at <strong>26.7%</strong> — more than 3× the overall average. Via Talent Pool follows at 21.1%.<br><br>
+        <strong>Junior hiring is role-specific:</strong> 0% hire rate across 3 of 4 roles. The only exception is Analista de Recrutamento Junior at 18.5%. Sourcing effort at Junior level should be concentrated accordingly.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 8: AI -->
+<div class="section">
+  <div class="section-eyebrow">Section 08</div>
+  <h2>How AI Was Applied</h2>
+  <div class="ai-steps">
+    <div class="ai-step">
+      <div class="step-n">Step 01</div>
+      <h4>Data Exploration</h4>
+      <p>Claude ran initial exploratory analysis identifying funnel structure, column types, and candidate distribution across recruiters, channels, and seniority levels.</p>
+    </div>
+    <div class="ai-step">
+      <div class="step-n">Step 02</div>
+      <h4>Pattern Recognition</h4>
+      <p>AI surfaced non-obvious patterns: referral underperformance, recruiter-seniority interaction, stage duration signal, score threshold, and compensation pattern in debrief decisions.</p>
+    </div>
+    <div class="ai-step">
+      <div class="step-n">Step 03</div>
+      <h4>Hypothesis Stress-Testing</h4>
+      <p>Claude cross-validated hypotheses — whether high-volume recruiters had harder requisitions, whether no-response was channel-specific, and whether score thresholds were hard gates or soft signals.</p>
+    </div>
+    <div class="ai-step">
+      <div class="step-n">Step 04</div>
+      <h4>Narrative & Communication</h4>
+      <p>AI structured the analysis into a coherent, actionable narrative for a recruiting audience — translating statistical patterns into decisions recruiters can act on.</p>
+    </div>
+  </div>
+  <p style="font-size:13px; color:#555; line-height:1.8; max-width:680px;"><strong>AI was used as a thinking partner and analyst accelerator — not as a replacement for judgment.</strong> Every insight was validated against raw data and interpreted through the lens of recruiting practice.</p>
+</div>
+
+<!-- SECTION 9: INSIGHTS -->
+<div class="section">
+  <div class="section-eyebrow">Section 09</div>
+  <h2>Key Insights Summary</h2>
+  <div class="insight-grid">
+    <div class="insight-card"><div class="ico">01</div><h4>Github & Inbound outperform all channels</h4><p>Technical platform presence and inbound interest have <strong>measurable ROI</strong>. These channels convert at 11% and 10.1% respectively vs. 8.2% overall average.</p></div>
+    <div class="insight-card"><div class="ico">02</div><h4>Referrals underperform expectations</h4><p><strong>4.7% hire rate</strong> — lowest of all channels, despite being commonly over-trusted. Lowest response rate (59.4%) suggests referred candidates approach the process with less urgency.</p></div>
+    <div class="insight-card"><div class="ico">03</div><h4>No response is the #1 pipeline killer</h4><p>210 of 375 logged rejections. <strong>Outreach personalization problem, not a volume problem.</strong> 41% of all exits have no reason logged — a data quality gap compounding the issue.</p></div>
+    <div class="insight-card"><div class="ico">04</div><h4>Score above 75 is the clearest hiring predictor</h4><p>Candidates clearing 75 across all three dimensions show <strong>82.6% offer rate</strong>. Technical score below 70 = 0% hire rate across 221 candidates. A hard floor, not a soft signal.</p></div>
+    <div class="insight-card"><div class="ico">05</div><h4>Stage duration is a positive signal</h4><p>Among candidates who passed screening, hired candidates stay in process <strong>nearly 2× longer</strong> than non-hired (32.7 vs 16.9 days). Fast exits predict failure.</p></div>
+    <div class="insight-card"><div class="ico">06</div><h4>Recruiter performance is level-dependent</h4><p>Ana converts <strong>37.5% of Staff candidates</strong>. Bruno is consistently strong across all levels. Diego and Fernanda collapse at senior/staff — aligning assignments to seniority strengths could improve conversion without adding headcount.</p></div>
+    <div class="insight-card"><div class="ico">07</div><h4>Volume sourcing inflates pipeline without improving conversion</h4><p>Gustavo: <strong>121 candidates, 5% hire rate</strong>. Ana: 75 candidates, 13.3% hire rate. Quality of targeting — not volume — drives conversion.</p></div>
+    <div class="insight-card"><div class="ico">08</div><h4>Role-channel combinations matter</h4><p>Analista de Recrutamento via Github converts at <strong>26.7%</strong> — 3× the overall average. Junior hiring is only viable for specific roles; applying it uniformly wastes sourcing effort.</p></div>
+  </div>
+</div>
+
+<!-- SECTION 10: RECOMMENDATIONS -->
+<div class="section">
+  <div class="section-eyebrow">Section 10</div>
+  <h2>Practical Recommendations for Recruiters</h2>
+  <div class="recs">
+    <div class="rec"><div class="rec-num">1</div><div class="rec-body"><h4>Prioritize Github and Inbound over mass LinkedIn outreach</h4><p>Reallocate sourcing effort toward channels that convert, not channels that generate volume.</p></div></div>
+    <div class="rec"><div class="rec-num">2</div><div class="rec-body"><h4>Treat no-response as a quality signal</h4><p>Personalize outreach referencing specific candidate work. Don't increase volume — increase relevance.</p></div></div>
+    <div class="rec"><div class="rec-num">3</div><div class="rec-body"><h4>Use the 75-point threshold as an early decision signal</h4><p>Set expectations with hiring managers before investing additional interview cycles in candidates unlikely to clear the bar.</p></div></div>
+    <div class="rec"><div class="rec-num">4</div><div class="rec-body"><h4>Build a warm pipeline from timing and headcount rejects</h4><p>The 8 candidates who cleared ≥75 across all dimensions but lost to external reasons are the highest-probability future hires. Keep them engaged.</p></div></div>
+    <div class="rec"><div class="rec-num">5</div><div class="rec-body"><h4>Align recruiter assignments to seniority strengths</h4><p>Route senior and staff roles to Bruno and Ana. Develop Diego and Fernanda's calibration at senior levels through shadowing and scorecard review.</p></div></div>
+    <div class="rec"><div class="rec-num">6</div><div class="rec-body"><h4>Audit the referral process</h4><p>Add a structured evaluation step before referrals enter the pipeline. Avoid advancing any referral candidate solely because of the channel.</p></div></div>
+    <div class="rec"><div class="rec-num">7</div><div class="rec-body"><h4>Consider repositioning the technical assessment before Interview 1 for high-volume requisitions</h4><p>Particularly at Junior and Pleno levels. A common concern is that early assessments reduce engagement — this can be mitigated with strong candidate communications that explain the process, set expectations, and commit to timely feedback regardless of outcome. When done well, an early test respects the candidate's time as much as the recruiter's. At Senior and Staff levels, the recruiter conversation should come first — relationship and context matter more, and a cold assessment early risks losing high-value passive candidates.</p></div></div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>CloudWalk — Sourcing Analysis Technical Challenge</span>
+  <span>AI-assisted · Claude (Anthropic) · 2025</span>
+</div>
+
+</body>
+</html>
